@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="2.0.1" />
+    <PackageReference Include="LiteDB" Version="4.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="botsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Extensions\Mafia\Source\Mafia.csproj" />
+    <ProjectReference Include="..\Extensions\Recruiting\Recruiting.csproj" />
+    <ProjectReference Include="..\Extensions\Matches\Source\Matches.csproj" />
+  </ItemGroup>
+
+</Project>
