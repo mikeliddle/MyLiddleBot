@@ -3,14 +3,125 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TyniBot;
 
 namespace Discord.SCBang
 {
     public class Output
     {
+        public static readonly string OrangeEmoji = EmojiLibrary.ByShortname(":large_orange_diamond:").Unicode;
+        public static readonly string BlueEmoji = EmojiLibrary.ByShortname(":large_blue_diamond:").Unicode;
+        public static readonly string OvertimeEmoji = EmojiLibrary.ByShortname(":alarm_clock:").Unicode;
+        public static readonly string EndedEmoji = EmojiLibrary.ByShortname(":checkered_flag:").Unicode;
+
+        private static List<string[]> PossibleEmjoiGroups = new List<string[]>()
+        {
+            new string[]{
+                EmojiLibrary.ByShortname(":one:").Unicode,
+                EmojiLibrary.ByShortname(":two:").Unicode,
+                EmojiLibrary.ByShortname(":three:").Unicode,
+                EmojiLibrary.ByShortname(":four:").Unicode,
+                EmojiLibrary.ByShortname(":five:").Unicode,
+                EmojiLibrary.ByShortname(":six:").Unicode,
+                EmojiLibrary.ByShortname(":seven:").Unicode,
+                EmojiLibrary.ByShortname(":eight:").Unicode,
+            },
+        };
+
+        private static Random rand = new Random();
+        private static string[] PossiblePlayerEmojis()
+        {
+            return PossibleEmjoiGroups[rand.Next(PossibleEmjoiGroups.Count)];
+        }
+
+        public static async Task<List<IUserMessage>> NotifyStartGame(Game game)
+        {
+            // Notify each Player
+            var msgs = new List<IUserMessage>();
+            foreach (var player in game.Players.Values)
+                msgs.Add(await player.SendMessageAsync($"You are a {player.Role}!"));
+            return msgs;
+        }
+
+        public static async Task<IUserMessage> StartGame(Game game, IMessageChannel channel)
+        {
+            await NotifyStartGame(game);
+
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+
+            embedBuilder.AddField("Game Result:", $"{Output.BlueEmoji} Sheriff Won! {Output.OrangeEmoji} Outlaws Won! {Output.OvertimeEmoji} Renegade Won! {Output.EndedEmoji} End Game!");
+            embedBuilder.AddField("Game Result:", $"{Output.BlueEmoji} Sheriff Won! {Output.OrangeEmoji} Outlaws Won! {Output.OvertimeEmoji} Renegade Won! {Output.EndedEmoji} End Game!");
+
+            var msg = await channel.SendMessageAsync($"**New Mafia Game! Deputies: {game.SheriffTeam.Count - 1}, Outlaws: {game.OutlawTeam}, Renegades: {game.RenegadeTeam}**", false, embedBuilder.Build());
+
+            var reactions = new List<IEmote>() { new Emoji(Output.BlueEmoji), new Emoji(Output.OrangeEmoji), new Emoji(Output.OvertimeEmoji), new Emoji(Output.EndedEmoji) };
+            await msg.AddReactionsAsync(reactions.ToArray());
+
+            return msg;
+        }
+
+        public static async Task<List<IUserMessage>> StartVoting(Game game, IMessageChannel channel, bool privateVoting = false)
+        {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+
+            int i = 0;
+            string players = "";
+            string[] emojis = PossiblePlayerEmojis();
+            foreach (var p in game.Players.Values)
+            {
+                p.Emoji = emojis[i++];
+                players += $"{p.Emoji} - {p.Mention} ";
+                if (i > 0 && i % 3 == 0) players += "\r\n";
+            }
+
+            embedBuilder.AddField("Players:", players);
+            var embed = embedBuilder.Build();
+
+            var msgs = new List<IUserMessage>();
+            if(!privateVoting)
+            {
+                msgs.Add(await channel.SendMessageAsync($"**Vote for Mafia!**", false, embed));
+            }
+            else
+            {   // Send each player a private DM for voting 
+                foreach (var p in game.Players.Values)
+                {
+                    msgs.Add(await p.SendMessageAsync($"**Vote for Mafia!**", false, embed));
+                }
+            }
+
+            List<IEmote> reactions = new List<IEmote>();
+            foreach (var p1 in game.Players)
+            {
+                reactions.Add(new Emoji(p1.Value.Emoji));
+            }
+
+            foreach (var msg in msgs)
+            {
+                await msg.AddReactionsAsync(reactions.ToArray());
+            }
+
+            return msgs;
+        }
+
+        public static async Task<IUserMessage> Score(Game game, IMessageChannel channel)
+        {
+            EmbedBuilder embedBuilder = new EmbedBuilder();
+
+            var ordered = game.Players.OrderByDescending(x => x.Value.Score);
+
+            embedBuilder.AddField("Score: ", string.Join("\r\n", ordered.Select(p => $"{p.Value.Emoji} {p.Value.Mention} = {p.Value.Score}")));
+
+            embedBuilder.AddField("Mafia: ", string.Join(" | ", game.Mafia.Select(u => $"{u.Emoji} {u.Mention}")));
+            if (game.Joker != null)
+                embedBuilder.AddField("Joker: ", $"{game.Joker.Emoji} {game.Joker.Mention}");
+
+            return await channel.SendMessageAsync($"**Game Over! {ordered.First().Value.Mention} Won!**", false, embedBuilder.Build());
+        }
+
         public static async Task<IUserMessage> HelpText(IMessageChannel channel)
         {
-            var commands = typeof(SCBangCommand).GetMethods()
+            var commands = typeof(MafiaCommand).GetMethods()
                       .Where(m => m.GetCustomAttributes(typeof(SummaryAttribute), false).Length > 0)
                       .ToArray();
 
@@ -20,66 +131,13 @@ namespace Discord.SCBang
             {
                 var name = (CommandAttribute)command.GetCustomAttributes(typeof(CommandAttribute), false)[0];
                 var summary = (SummaryAttribute)command.GetCustomAttributes(typeof(SummaryAttribute), false)[0];
+                // Get the command Summary attribute information
+                string embedFieldText = summary.Text ?? "No description available\n";
 
-                if (!string.IsNullOrWhiteSpace(name.Text))
-                {
-                    // Get the command Summary attribute information
-                    string embedFieldText = summary.Text ?? "No description available\n";
-
-                    embedBuilder.AddField(name.Text, embedFieldText);
-                }
+                embedBuilder.AddField(name.Text, embedFieldText);
             }
 
-            return await channel.SendMessageAsync("**SC Commands:** ", false, embedBuilder.Build());
-        }
-
-        /*
-         Match Output
-         @param matches - List of Match Pairings
-         @param channel - Channel Object for the Output Channel
-        */
-        public static async Task<IMessage> OutputUniqueMatches(List<Tuple<List<SCPlayer>, List<SCPlayer>>> matches, int groupNumber, IMessageChannel channel)
-        {
-
-            int MaxMatchDisplayCount = 5;
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-
-            for (int i = 0; i < matches.Count && i < MaxMatchDisplayCount; i++)
-            {
-                // Generate Strings for Team Compositions
-                var match = matches[i];
-                var team1 = string.Join('\n', match.Item1.Select(m => m.Username + " (~" + m.MMR + ")"));
-                var team2 = string.Join('\n', match.Item2.Select(m => m.Username + " (~" + m.MMR + ")"));
-
-                // Generate Strings for Average Team MMRs
-                int team1MMR = match.Item1.Sum(item => item.MMR) / match.Item1.Count;
-                int team2MMR = match.Item2.Sum(item => item.MMR) / match.Item2.Count;
-
-                // Add fields to EmbedBuilder
-                embedBuilder.AddField($"Match {i + 1}", "\u200b");
-                embedBuilder.AddField($"Orange ({team1MMR}):", team1, true);
-                embedBuilder.AddField($"Blue ({team2MMR}):", team2, true);
-                embedBuilder.AddField("\u200B", "\u200B");
-            }
-
-            return await channel.SendMessageAsync($"**Group {groupNumber} ({matches.Count} Matches)**", false, embedBuilder.Build());
-        }
-
-        public static async Task<IUserMessage> QueueStarted(IMessageChannel channel, SCQueue queue)
-        {
-            return await channel.SendMessageAsync($"New SC Queue created named {queue.Name}!");
-        }
-
-        public static async Task<IUserMessage> PlayersAdded(IMessageChannel channel, SCQueue queue, List<SCPlayer> list)
-        {
-            string players = string.Join("\r\n", queue.Players.Select(p => p.Value.Username));
-            return await channel.SendMessageAsync($"Players were added succesfully!\r\n\r\n Queue: {players}");
-        }
-
-        public static async Task<IUserMessage> PlayersRemoved(IMessageChannel channel, SCQueue queue, List<SCPlayer> list)
-        {
-            string players = string.Join("\r\n", queue.Players.Select(p => p.Value.Username));
-            return await channel.SendMessageAsync($"Players were removed succesfully!\r\n\r\n Queue: {players}");
+            return await channel.SendMessageAsync("**Mafia Commands:** ", false, embedBuilder.Build());
         }
     }
 }
