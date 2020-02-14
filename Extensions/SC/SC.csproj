@@ -17,7 +17,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Folder Include="Models\" />
     <Folder Include="Utils\" />
     <Folder Include="ReactionHandlers\" />
   </ItemGroup>
