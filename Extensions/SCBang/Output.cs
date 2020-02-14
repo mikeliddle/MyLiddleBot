@@ -9,9 +9,10 @@ namespace Discord.SCBang
 {
     public class Output
     {
-        public static readonly string OrangeEmoji = EmojiLibrary.ByShortname(":large_orange_diamond:").Unicode;
-        public static readonly string BlueEmoji = EmojiLibrary.ByShortname(":large_blue_diamond:").Unicode;
-        public static readonly string OvertimeEmoji = EmojiLibrary.ByShortname(":alarm_clock:").Unicode;
+        public static readonly string OutlawEmoji = EmojiLibrary.ByShortname(":sunglasses:").Unicode;
+        public static readonly string SheriffEmoji = EmojiLibrary.ByShortname(":star:").Unicode;
+        public static readonly string DeputyEmoji = EmojiLibrary.ByShortname(":cowboy:").Unicode;
+        public static readonly string RenegadeEmoji = EmojiLibrary.ByShortname(":man_in_suit:").Unicode;
         public static readonly string EndedEmoji = EmojiLibrary.ByShortname(":checkered_flag:").Unicode;
 
         private static List<string[]> PossibleEmjoiGroups = new List<string[]>()
@@ -49,79 +50,19 @@ namespace Discord.SCBang
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
 
-            embedBuilder.AddField("Game Result:", $"{Output.BlueEmoji} Sheriff Won! {Output.OrangeEmoji} Outlaws Won! {Output.OvertimeEmoji} Renegade Won! {Output.EndedEmoji} End Game!");
-            embedBuilder.AddField("Game Result:", $"{Output.BlueEmoji} Sheriff Won! {Output.OrangeEmoji} Outlaws Won! {Output.OvertimeEmoji} Renegade Won! {Output.EndedEmoji} End Game!");
+            embedBuilder.AddField("Game Result:", $"{Output.SheriffEmoji} Sheriff Died! {Output.DeputyEmoji} Deputy Died! {Output.OutlawEmoji} Outlaw Died! {Output.RenegadeEmoji} Renegade Died! {Output.EndedEmoji} End Game!");
 
             var msg = await channel.SendMessageAsync($"**New Mafia Game! Deputies: {game.SheriffTeam.Count - 1}, Outlaws: {game.OutlawTeam}, Renegades: {game.RenegadeTeam}**", false, embedBuilder.Build());
 
-            var reactions = new List<IEmote>() { new Emoji(Output.BlueEmoji), new Emoji(Output.OrangeEmoji), new Emoji(Output.OvertimeEmoji), new Emoji(Output.EndedEmoji) };
+            var reactions = new List<IEmote>() { new Emoji(Output.SheriffEmoji), new Emoji(Output.DeputyEmoji), new Emoji(Output.OutlawEmoji), new Emoji(Output.RenegadeEmoji), new Emoji(Output.EndedEmoji) };
             await msg.AddReactionsAsync(reactions.ToArray());
 
             return msg;
         }
 
-        public static async Task<List<IUserMessage>> StartVoting(Game game, IMessageChannel channel, bool privateVoting = false)
-        {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-
-            int i = 0;
-            string players = "";
-            string[] emojis = PossiblePlayerEmojis();
-            foreach (var p in game.Players.Values)
-            {
-                p.Emoji = emojis[i++];
-                players += $"{p.Emoji} - {p.Mention} ";
-                if (i > 0 && i % 3 == 0) players += "\r\n";
-            }
-
-            embedBuilder.AddField("Players:", players);
-            var embed = embedBuilder.Build();
-
-            var msgs = new List<IUserMessage>();
-            if(!privateVoting)
-            {
-                msgs.Add(await channel.SendMessageAsync($"**Vote for Mafia!**", false, embed));
-            }
-            else
-            {   // Send each player a private DM for voting 
-                foreach (var p in game.Players.Values)
-                {
-                    msgs.Add(await p.SendMessageAsync($"**Vote for Mafia!**", false, embed));
-                }
-            }
-
-            List<IEmote> reactions = new List<IEmote>();
-            foreach (var p1 in game.Players)
-            {
-                reactions.Add(new Emoji(p1.Value.Emoji));
-            }
-
-            foreach (var msg in msgs)
-            {
-                await msg.AddReactionsAsync(reactions.ToArray());
-            }
-
-            return msgs;
-        }
-
-        public static async Task<IUserMessage> Score(Game game, IMessageChannel channel)
-        {
-            EmbedBuilder embedBuilder = new EmbedBuilder();
-
-            var ordered = game.Players.OrderByDescending(x => x.Value.Score);
-
-            embedBuilder.AddField("Score: ", string.Join("\r\n", ordered.Select(p => $"{p.Value.Emoji} {p.Value.Mention} = {p.Value.Score}")));
-
-            embedBuilder.AddField("Mafia: ", string.Join(" | ", game.Mafia.Select(u => $"{u.Emoji} {u.Mention}")));
-            if (game.Joker != null)
-                embedBuilder.AddField("Joker: ", $"{game.Joker.Emoji} {game.Joker.Mention}");
-
-            return await channel.SendMessageAsync($"**Game Over! {ordered.First().Value.Mention} Won!**", false, embedBuilder.Build());
-        }
-
         public static async Task<IUserMessage> HelpText(IMessageChannel channel)
         {
-            var commands = typeof(MafiaCommand).GetMethods()
+            var commands = typeof(SCBangCommand).GetMethods()
                       .Where(m => m.GetCustomAttributes(typeof(SummaryAttribute), false).Length > 0)
                       .ToArray();
 
