@@ -30,22 +30,21 @@ namespace Discord.SCBang
                 return;
             }
 
-            if (reaction.Emote.Name == Output.OrangeEmoji) // Which reaction was clicked?
+            if (reaction.Emote.Name == Output.OutlawEmoji) // Which reaction was clicked?
             {
-                await SelectWinningTeamAsync(Team.Orange);
+                await SelectWinningTeamAsync(Role.Outlaw);
             }
-            else if (reaction.Emote.Name == Output.BlueEmoji)
+            else if (reaction.Emote.Name == Output.SheriffEmoji)
             {
-                await SelectWinningTeamAsync(Team.Blue);
+                await SelectWinningTeamAsync(Role.Sheriff);
             }
-            else if (reaction.Emote.Name == Output.OvertimeEmoji)
+            else if (reaction.Emote.Name == Output.RenegadeEmoji)
             {
-                Game.OvertimeReached = true;
-                Games.Update(Game);
+                await SelectWinningTeamAsync(Role.Sheriff);
             }
             else if (reaction.Emote.Name == Output.EndedEmoji)
             {
-                if (Game.WinningTeam == null) // if we don't have a winner remove emoji and return
+                if (Game.WinningRole == null) // if we don't have a winner remove emoji and return
                 {
                     await Context.Message.RemoveReactionAsync(new Emoji(Output.EndedEmoji), UserReacted);
                     return;
@@ -53,14 +52,6 @@ namespace Discord.SCBang
 
                 // Un-register this message for receiving new reactions
                 ReactionHandlers.Delete(u => u.MsgId == this.MsgId);
-
-                // Output voting notification message
-                var votingMessages = await Output.StartVoting(Game, Context.Channel, VotingHandler.PrivateVoting);
-                Games.Update(Game); // Update so we store emojis on user
-
-                // Register new message for receiving reactions
-                foreach (var votingMessage in votingMessages)
-                    ReactionHandlers.Insert(new VotingHandler() { MsgId = votingMessage.Id, GameId = Game.Id });
             }
         }
 
@@ -69,14 +60,12 @@ namespace Discord.SCBang
             if (!(await Validate(context, reaction)))
                 return;
 
-            var blueCount = Context.Message.Reactions.Where(e => e.Key.Name == Output.BlueEmoji).First().Value.ReactionCount;
-            var orangeCount = Context.Message.Reactions.Where(e => e.Key.Name == Output.OrangeEmoji).First().Value.ReactionCount;
+            var sheriffCount = Context.Message.Reactions.Where(e => e.Key.Name == Output.SheriffEmoji).First().Value.ReactionCount;
+            var outlawCount = Context.Message.Reactions.Where(e => e.Key.Name == Output.OutlawEmoji).First().Value.ReactionCount;
+            var renegadeCount = Context.Message.Reactions.Where(e => e.Key.Name == Output.RenegadeEmoji).First().Value.ReactionCount;
 
-            if (blueCount + orangeCount == 2)
-                Game.WinningTeam = null;
-
-            if (reaction.Emote.Name == Output.OvertimeEmoji)
-                Game.OvertimeReached = false;
+            if (sheriffCount + outlawCount + renegadeCount == 3)
+                Game.WinningRole = null;
 
             Games.Update(Game);
             return;

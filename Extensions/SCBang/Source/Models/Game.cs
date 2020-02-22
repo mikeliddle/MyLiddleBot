@@ -55,7 +55,7 @@ namespace Discord.SCBang
                 throw new Exception("You need between 3 and 8 to play! Mention some friends! You have friends don't you?");
 
             // Validate that number of mafia is less than number of players
-            if (numOutlaws + numDeputies + numRenegades + 1 == mentions.Count)
+            if (!(numOutlaws + numDeputies + numRenegades + 1 == mentions.Count))
                 throw new Exception("Number of roles must equal the number of players!");
 
             return createSCBangGame(mentions, numDeputies, numOutlaws, numRenegades);
