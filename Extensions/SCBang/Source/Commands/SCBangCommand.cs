@@ -14,13 +14,13 @@ namespace Discord.SCBang
     {
         #region Commands
 
-        [Command("scbang"), Summary("**!scbang new <matchName> {<numPlayers> | <numDeputies> <numOutlaws> <numRenegades>}** Creates a new game of SCBang! Each individual player needs to join.")]
+        [Command("scbang"), Summary("**!scbang new <matchName> {<numDeputies> <numOutlaws> <numRenegades>}** Creates a new game of SCBang! Each individual player needs to join.")]
         [Alias("newMatch", "newGame", "newmatch", "newgame")]
-        public async Task NewSCBangCommand(string name, int numPlayers)
+        public async Task NewSCBangCommand(string name)
         {
             try
             {
-                Game game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser) s).ToList(), numPlayers);
+                Game game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser) s).ToList());
                 
                 var games = Context.Database.GetCollection<Game>();
 

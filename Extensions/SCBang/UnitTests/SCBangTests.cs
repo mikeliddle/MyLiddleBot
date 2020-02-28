@@ -70,99 +70,26 @@ namespace SCBang.UnitTests
         //        }
         //    }
 
-        //    [TestMethod]
-        //    public void TestCreateGameGeneratesValidGame()
-        //    {
-        //        Random r = new Random();
+        [TestMethod]
+        public void TestCreateGameGeneratesValidGame()
+        {
+            var mentions = new List<IUser>();
+            for (int i = 0; i < 8; i++)
+            {
+                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
+            }
 
-        //        for (int j = 0; j < 100; j++)
-        //        {
-        //            var mentions = new List<IUser>();
-        //            for (int i = 0; i < (j % 7) + 2; i++)
-        //            {
-        //                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
-        //            }
+            var game = Discord.SCBang.Game.CreateGame(mentions);
 
-        //            for (int i = 0; i < 300; i++)
-        //            {
-        //                var numSCBang = (i % (mentions.Count - 1)) + 1;
-        //                int random = r.Next(3);
-        //                GameMode mode = GameMode.Normal;
-        //                if (random == 1)
-        //                    mode = GameMode.Battle;
-        //                if (random == 2 && mentions.Count > numSCBang)
-        //                    mode = GameMode.Joker;
+            // Must have teams assigned.
+            Assert.IsNotNull(game.SheriffTeam);
+            Assert.IsNotNull(game.OutlawTeam);
+            Assert.IsNotNull(game.RenegadeTeam);
 
-        //                var game = (Discord.SCBang.Game.CreateGame(mentions, numSCBang, mode));
-
-        //                Assert.AreEqual(numSCBang, game.SCBang.Count()); // validate actual number of mafia was as requested
-        //                Assert.AreEqual(game.TeamOrange.Count() + game.TeamBlue.Count(), mentions.Count); // validate members of both teams equals total count of mentions
-
-        //                if (mode == GameMode.Joker)
-        //                {
-        //                    Assert.IsNotNull(game.Joker); // game must contain a joker
-        //                    Assert.IsTrue(mentions.Contains(game.Joker.DiscordUser)); // joker must be in original mentions
-        //                    Assert.IsFalse(game.SCBang.Contains(game.Joker)); // joker can't be mafia
-        //                    Assert.AreEqual(game.Villagers.Count, mentions.Count - numSCBang - 1); // assert number of villagers equals mentions - numSCBang - joker
-        //                }
-        //                else
-        //                {
-        //                    Assert.AreEqual(game.Villagers.Count, mentions.Count - numSCBang); // assert number of villagers equals mentions - numSCBang
-        //                }
-
-        //                if(mode == GameMode.Joker || mode == GameMode.Battle)
-        //                {
-        //                    int team1SCBang = game.SCBang.Where(u => u.Team == Discord.SCBang.Team.Orange).Count();
-        //                    int team2SCBang = game.SCBang.Where(u => u.Team == Discord.SCBang.Team.Blue).Count();
-
-        //                    if(numSCBang > 1) 
-        //                    {
-        //                        Assert.AreNotEqual(0, team1SCBang); // assert both teams have a mafia member
-        //                        Assert.AreNotEqual(0, team2SCBang);
-
-        //                        if (numSCBang % 2 == 0) // if even
-        //                        {
-        //                            Assert.AreEqual(team1SCBang, team2SCBang); // assert evenly split
-        //                        }
-        //                        else // if odd
-        //                        {
-        //                            int sub = team1SCBang > team2SCBang ? team1SCBang - team2SCBang : team2SCBang - team1SCBang;
-        //                            Assert.AreEqual(1, sub); // assert difference is one
-        //                        }
-        //                    }
-        //                }
-
-        //                var mafia = new Dictionary<string, string>();
-        //                var t1 = new Dictionary<string, string>();
-        //                var t2 = new Dictionary<string, string>();
-
-        //                foreach (var u in game.SCBang)
-        //                {
-        //                    Assert.IsTrue(mentions.Contains(u.DiscordUser)); // validate each mafia member was part of original mentions
-        //                    Assert.AreEqual(game.SCBang.Where(p => p.Id == u.Id).Count(), 1); // validate users weren't added to mafia twice
-        //                    mafia.Add(u.Username, u.Username);
-        //                }
-        //                foreach (var u in game.TeamOrange)
-        //                {
-        //                    t1.Add(u.Username, u.Username);
-        //                    Assert.IsTrue(mentions.Contains(u.DiscordUser)); // validate every team member was part of original mentions
-        //                    Assert.AreEqual(game.TeamOrange.Where(p => p.Id == u.Id).Count(), 1); // assert member is added to the team only once
-        //                }
-        //                foreach (var u in game.TeamBlue)
-        //                {
-        //                    t2.Add(u.Username, u.Username);
-        //                    Assert.IsTrue(mentions.Contains(u.DiscordUser)); // validate every team member was part of original mentions
-        //                    Assert.IsFalse(t1.ContainsKey(u.Username)); // validate every team2 member is not in team 1
-        //                    Assert.AreEqual(game.TeamBlue.Where(p => p.Id == u.Id).Count(), 1); // assert member is added to the team only once
-        //                }
-        //                foreach (var u in game.TeamOrange)
-        //                {
-        //                    Assert.IsFalse(t2.ContainsKey(u.Username)); // validate every team1 member is not in team 2
-        //                }
-
-        //            }
-        //        }
-        //    }
+            Assert.AreEqual(3, game.SheriffTeam.Count);
+            Assert.AreEqual(3, game.OutlawTeam.Count);
+            Assert.AreEqual(2, game.RenegadeTeam.Count);
+        }
 
         [TestMethod]
         public void TestValidateInputs()
@@ -173,42 +100,40 @@ namespace SCBang.UnitTests
                 mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
             }
 
-            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(null, 1))); // must have players
-            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 0))); // Can not have zero mafia
-            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, -1))); // Can not have negative mafia
-            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 9))); // can not have more mafia than players
+            Assert.ThrowsException<ArgumentNullException>(new Action(() => Discord.SCBang.Game.CreateGame(null))); // must have players
+            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(new List<IUser>()))); // Can not have zero players
+            
+            for (int i = 0; i < 5; i++)
+            {
+                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
+            }
+            Assert.ThrowsException<ArgumentException>(new Action(() => Discord.SCBang.Game.CreateGame(mentions))); // can not have more mafia than players
 
             // Valid states
-            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions, 3));
-            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions, 8));
-            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions, 5));
+
+            mentions = new List<IUser>();
+            for (int i = 0; i < 3; i++)
+            {
+                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
+            }
+            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions));
+
+            mentions = new List<IUser>();
+            for (int i = 0; i < 8; i++)
+            {
+                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
+            }
+            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions));
+
+            mentions = new List<IUser>();
+            for (int i = 0; i < 5; i++)
+            {
+                mentions.Add(GenerateUser(i.ToString(), (ulong)i).Object);
+            }
+            Assert.IsNotNull(Discord.SCBang.Game.CreateGame(mentions));
 
             mentions.Clear();
-            Assert.ThrowsException<Exception>(new Action(() => { Discord.SCBang.Game.CreateGame(mentions, 1); })); // Can not have zero players
-
-            mentions.Add(GenerateUser("1", 1, isBot: true).Object);
-            mentions.Add(GenerateUser("2", 2).Object);
-            Assert.ThrowsException<Exception>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 1)));
-
-            mentions.Clear();
-            mentions.Add(GenerateUser("1", 1, isWebHook: true).Object);
-            mentions.Add(GenerateUser("2", 2).Object);
-            Assert.ThrowsException<Exception>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 1)));
-
-            mentions.Clear();
-            mentions.Add(GenerateUser("1", 1).Object);
-            mentions.Add(GenerateUser("1", 1).Object);
-            Assert.ThrowsException<Exception>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 1)));
-
-            mentions.Clear();
-            mentions.Add(GenerateUser("1", 1).Object);
-            mentions.Add(GenerateUser("2", 2).Object);
-            Assert.ThrowsException<Exception>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 2)));
-
-            mentions.Clear();
-            mentions.Add(GenerateUser("1", 1).Object);
-            mentions.Add(GenerateUser("2", 2).Object);
-            Assert.ThrowsException<Exception>(new Action(() => Discord.SCBang.Game.CreateGame(mentions, 2)));
+            Assert.ThrowsException<ArgumentException>(new Action(() => { Discord.SCBang.Game.CreateGame(mentions); })); // Can not have zero players
         }
 
         private Mock<IUser> GenerateUser(string username, ulong id, bool isBot = false, bool isWebHook = false)

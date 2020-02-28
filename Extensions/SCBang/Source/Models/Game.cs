@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Discord.SCBang
 {
-
     public class Game
     {
         [BsonId]
@@ -24,8 +23,15 @@ namespace Discord.SCBang
         [BsonIgnore]
         public List<Player> RenegadeTeam => Players.Where(p => p.Value.Role == Role.Renegade).Select(p => p.Value).ToList();
 
-        public static Game CreateGame(List<IUser> mentions, int numPlayers)
+        public static Game CreateGame(List<IUser> mentions)
         {
+            if (mentions == null)
+            {
+                throw new ArgumentNullException(nameof(mentions));
+            }
+
+            int numPlayers = mentions.Count;
+
             return numPlayers switch
             {
                 3 => CreateGame(mentions, 0, 1, 1),
@@ -58,91 +64,7 @@ namespace Discord.SCBang
             if (!(numOutlaws + numDeputies + numRenegades + 1 == mentions.Count))
                 throw new Exception("Number of roles must equal the number of players!");
 
-            return createSCBangGame(mentions, numDeputies, numOutlaws, numRenegades);
-        }
-        
-        public bool AddVotes(ulong userId, List<ulong> votes)
-        {
-            bool addedAll = true;
-            foreach(var v in votes)
-            {
-                addedAll &= AddVote(userId, v);
-            }
-            return addedAll;
-        }
-
-        public bool RemoveVotes(ulong userId, List<ulong> votes)
-        {
-            bool removedAll = true;
-            foreach (var v in votes)
-            {
-                removedAll &= RemoveVote(userId, v);
-            }
-            return removedAll;
-        }
-
-        public bool AddVote(ulong userId, ulong mafiaId)
-        {
-            if (userId == mafiaId) return false; // We don't allow you to vote for yourself
-
-            if (!Players.ContainsKey(userId)) return false; // filter out people voting who aren't in the game
-
-            if (!Players.ContainsKey(mafiaId)) return false; // filter out votes for users not in the game
-
-            if (!Votes.ContainsKey(userId))
-            {
-                Votes[userId] = new ulong[] { mafiaId };
-                return true;
-            }
-
-            //if (Votes[userId].Length >= Mafia.Count) return false; // only accept the first votes of up to the number of mafia
-
-            if (Votes[userId].Contains(mafiaId)) return false; // we already counted this vote
-
-            Votes[userId] = Votes[userId].Append(mafiaId).ToArray();
-            return true;
-        }
-
-        public bool RemoveVote(ulong userId, ulong mafiaId)
-        {
-            if (!Players.ContainsKey(userId)) return false; // filter out people voting who aren't in the game
-
-            if (!Players.ContainsKey(mafiaId)) return false; // filter out votes for users not in the game
-
-            if (!Votes.ContainsKey(userId)) return false; // user hasn't voted return
-
-            if (!Votes[userId].Contains(mafiaId)) return false; // we don't have this vote anyways
-
-            Votes[userId] = Votes[userId].Where(u => u != mafiaId).ToArray();
-            return true;
-        }
-
-        public bool Score()
-        {
-            if (!WinningRole.HasValue) return false; // we only score games that have a winner
-
-            foreach (var player in Players.Values)
-            {
-                int score = 0;
-                bool wonGame = player.Role == WinningRole.Value;
-
-                if (player.Role == Role.Outlaw)
-                {
-                    // Do later
-                }
-                else if(player.Role == Role.Renegade)
-                {
-                    // Must be the only renegade to survive.
-                }
-                else
-                {
-                    //Sheriff and Deputies
-                }
-
-                player.Score = Math.Max(0,score);
-            }
-
-            return true;
+            return CreateSCBangGame(mentions, numDeputies, numOutlaws, numRenegades);
         }
 
         public static async Task<Game> GetGameAsync(ulong id, IDiscordClient channel, LiteCollection<Game> collection)
@@ -157,11 +79,11 @@ namespace Discord.SCBang
             return game;
         }
 
-        private static Game createSCBangGame(List<IUser> users, int numDeputies, int numOutlaws, int numRenegades)
+        private static Game CreateSCBangGame(List<IUser> users, int numDeputies, int numOutlaws, int numRenegades)
         {
             var players = users.Shuffle().ToList().Select(u => new Player() { Id = u.Id, Role = Role.Sheriff, DiscordUser = u }).ToList();
 
-            pickRoles(players, numDeputies, numOutlaws, numRenegades);
+            PickRoles(players, numDeputies, numOutlaws, numRenegades);
 
             Dictionary<ulong, Player> gamePlayers = null;
 
@@ -180,10 +102,8 @@ namespace Discord.SCBang
             };
         }
 
-        private static void pickRoles(List<Player> players, int numDeputies, int numOutlaws, int numRenegades)
+        private static void PickRoles(List<Player> players, int numDeputies, int numOutlaws, int numRenegades)
         {
-            var randomGenerator = new Random();
-
             var outlaws = players.Shuffle().ToList().Take(numOutlaws);
             foreach (var o in outlaws)
             {
@@ -194,16 +114,18 @@ namespace Discord.SCBang
             var deputies = players.Shuffle().ToList().Take(numDeputies);
             foreach (var d in deputies)
             {
-                d.Role = Role.Outlaw;
+                d.Role = Role.Deputy;
                 players.Remove(d);
             }
 
             var renegades = players.Shuffle().ToList().Take(numRenegades);
             foreach (var r in renegades)
             {
-                r.Role = Role.Outlaw;
-                players.Remove(r);
+                r.Role = Role.Renegade;
             }
+
+            players.AddRange(deputies);
+            players.AddRange(outlaws);
         }
     }
 }
