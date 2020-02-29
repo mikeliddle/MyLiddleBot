@@ -71,6 +71,7 @@ namespace MyLiddleBot
                 {
                     typeof(Ping),
                     typeof(Clear),
+                    typeof(Discord.SCBang.SCBangCommand),
                     typeof(Discord.Mafia.MafiaCommand),
                     typeof(Discord.Matches.MatchesCommand),
                     typeof(Discord.Inhouse.InhouseCommand)

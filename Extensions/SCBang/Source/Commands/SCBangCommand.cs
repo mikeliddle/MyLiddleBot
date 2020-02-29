@@ -9,14 +9,11 @@ using Discord.WebSocket;
 
 namespace Discord.SCBang
 {
-    [Group("SC")]
-    class SCBangCommand : ModuleBase<TyniBot.CommandContext>
+    public class SCBangCommand : ModuleBase<TyniBot.CommandContext>
     {
         #region Commands
-
-        [Command("scbang"), Summary("**!scbang new <matchName> {<numDeputies> <numOutlaws> <numRenegades>}** Creates a new game of SCBang! Each individual player needs to join.")]
-        [Alias("newMatch", "newGame", "newmatch", "newgame")]
-        public async Task NewSCBangCommand(string name)
+        [Command("scbang"), Summary("**!scbang <matchName> {<numDeputies> <numOutlaws> <numRenegades>}** Creates a new game of SCBang!")]
+        public async Task NewSCBangCommand([Remainder] string message = "")
         {
             try
             {
@@ -50,7 +47,7 @@ namespace Discord.SCBang
         }
 
         [Command("scbang")]
-        public async Task NewSCBangCommang(int numDeputies, int numOutlaws, int numRenegades)
+        public async Task NewSCBangCommand(int numDeputies, int numOutlaws, int numRenegades, [Remainder]string message = "")
         {
             try
             {
@@ -82,6 +79,18 @@ namespace Discord.SCBang
             {
                 await Context.Channel.SendMessageAsync($"Error: {e.Message}");
             }
+        }
+
+        [Command("scbang")]
+        public async Task NewSCBangCommand(string helpText, [Remainder] string message = "")
+        {
+            if (helpText.ToLower() == "help")
+            {
+                await HelpCommand();
+                return;
+            }
+
+            await NewSCBangCommand();
         }
 
         [Command("scbang"), Summary("**!scbang help** | Displays this help text.")]

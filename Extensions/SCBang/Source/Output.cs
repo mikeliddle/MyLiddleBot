@@ -39,8 +39,10 @@ namespace Discord.SCBang
         {
             // Notify each Player
             var msgs = new List<IUserMessage>();
+
             foreach (var player in game.Players.Values)
                 msgs.Add(await player.SendMessageAsync($"You are a {player.Role}!"));
+
             return msgs;
         }
 
