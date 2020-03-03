@@ -10,7 +10,7 @@ Same functionality as TyniBot, with additions for the OG StarCraft.
 
 ### Commands
 
-**!scbang new \<matchName\> \{\<numPlayers\> | \<numDeputies\> \<numOutlaws\> \<numRenegades\>\}** Creates a new game of SCBang! Each individual player needs to join.
+**!scbang @player1 @player2 @player3 ...** Creates a new game of SCBang!
 
 ## RocketLeague
 
