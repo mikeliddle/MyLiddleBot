@@ -30,46 +30,6 @@ namespace SCBang.UnitTests
             }
         }
 
-        //    [TestMethod]
-        //    public async Task TestDbStoreRetrieveGame()
-        //    {
-        //        using (var Database = new LiteDatabase(@"test.db"))
-        //        {
-        //            var mentions = new List<IUser>();
-
-        //            var user1 = new Mock<IUser>();
-        //            user1.Setup(u => u.Username).Returns("bob");
-        //            user1.Setup(u => u.Id).Returns(1);
-        //            mentions.Add(user1.Object);
-
-        //            var user2 = new Mock<IUser>();
-        //            user2.Setup(u => u.Username).Returns("joe");
-        //            user2.Setup(u => u.Id).Returns(2);
-        //            mentions.Add(user2.Object);
-
-        //            var input = Discord.SCBang.Game.CreateGame(mentions, 1, GameMode.Joker);
-        //            input.Id = 1;
-
-        //            var gamesCollection = Database.GetCollection<Discord.SCBang.Game>();
-        //            gamesCollection.Delete(u => true);
-        //            gamesCollection.Insert(input);
-        //            gamesCollection.EnsureIndex(x => x.Id);
-
-        //            var channelMock = new Mock<IDiscordClient>();
-        //            channelMock.Setup(u => u.GetUserAsync(user1.Object.Id, It.IsAny<CacheMode>(), It.IsAny<RequestOptions>())).Returns(Task.FromResult(user1.Object));
-        //            channelMock.Setup(u => u.GetUserAsync(user2.Object.Id, It.IsAny<CacheMode>(), It.IsAny<RequestOptions>())).Returns(Task.FromResult(user2.Object));
-
-        //            var output = await Discord.SCBang.Game.GetGameAsync(input.Id, channelMock.Object, gamesCollection);
-
-        //            Assert.AreEqual(output.Mode, input.Mode);
-        //            Assert.AreEqual(input.Players.Count, output.Players.Count);
-        //            Assert.AreEqual(output.SCBang.Where(u => input.SCBang.Where(o => o.Id != u.Id).Count() > 0).Count(), 0);
-        //            Assert.AreEqual(output.TeamOrange.Where(u => input.TeamOrange.Where(o => o.Id != u.Id).Count() > 0).Count(), 0);
-        //            Assert.AreEqual(output.TeamBlue.Where(u => input.TeamBlue.Where(o => o.Id != u.Id).Count() > 0).Count(), 0);
-        //            Assert.AreEqual(output.Joker.Id, input.Joker.Id);
-        //        }
-        //    }
-
         [TestMethod]
         public void TestCreateGameGeneratesValidGame()
         {

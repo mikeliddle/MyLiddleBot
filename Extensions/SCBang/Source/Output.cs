@@ -30,10 +30,6 @@ namespace Discord.SCBang
         };
 
         private static Random rand = new Random();
-        private static string[] PossiblePlayerEmojis()
-        {
-            return PossibleEmjoiGroups[rand.Next(PossibleEmjoiGroups.Count)];
-        }
 
         public static async Task<List<IUserMessage>> NotifyStartGame(Game game)
         {
@@ -54,7 +50,7 @@ namespace Discord.SCBang
 
             embedBuilder.AddField("Game Result:", $"{Output.SheriffEmoji} Sheriff Died! {Output.DeputyEmoji} Deputy Died! {Output.OutlawEmoji} Outlaw Died! {Output.RenegadeEmoji} Renegade Died! {Output.EndedEmoji} End Game!");
 
-            var msg = await channel.SendMessageAsync($"**New Mafia Game! Deputies: {game.SheriffTeam.Count - 1}, Outlaws: {game.OutlawTeam}, Renegades: {game.RenegadeTeam}**", false, embedBuilder.Build());
+            var msg = await channel.SendMessageAsync($"**New Mafia Game! Deputies: {game.SheriffTeam.Count - 1}, Outlaws: {game.OutlawTeam.Count}, Renegades: {game.RenegadeTeam.Count}**", false, embedBuilder.Build());
 
             var reactions = new List<IEmote>() { new Emoji(Output.SheriffEmoji), new Emoji(Output.DeputyEmoji), new Emoji(Output.OutlawEmoji), new Emoji(Output.RenegadeEmoji), new Emoji(Output.EndedEmoji) };
             await msg.AddReactionsAsync(reactions.ToArray());
@@ -80,7 +76,7 @@ namespace Discord.SCBang
                 embedBuilder.AddField(name.Text, embedFieldText);
             }
 
-            return await channel.SendMessageAsync("**Mafia Commands:** ", false, embedBuilder.Build());
+            return await channel.SendMessageAsync("**SCBang Commands:** ", false, embedBuilder.Build());
         }
     }
 }

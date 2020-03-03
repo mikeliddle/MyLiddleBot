@@ -6,102 +6,98 @@ using System.Linq;
 using LiteDB;
 using TyniBot;
 using Discord.WebSocket;
+using System.Diagnostics;
 
 namespace Discord.SCBang
 {
     public class SCBangCommand : ModuleBase<TyniBot.CommandContext>
     {
         #region Commands
-        [Command("scbang"), Summary("**!scbang <matchName> {<numDeputies> <numOutlaws> <numRenegades>}** Creates a new game of SCBang!")]
-        public async Task NewSCBangCommand([Remainder] string message = "")
-        {
-            try
-            {
-                Game game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser) s).ToList());
-                
-                var games = Context.Database.GetCollection<Game>();
-
-                // Delete current game if exists
-                try
-                {
-                    var existingGame = await Game.GetGameAsync(Context.Channel.Id, Context.Client, games);
-                    if (existingGame != null)
-                        games.Delete(g => g.Id == existingGame.Id);
-                }
-                catch (Exception) { }
-
-                // Insert into DB
-                games.Insert(game);
-                games.EnsureIndex(x => x.Id);
-
-                IUserMessage scoringMessage = await Output.StartGame(game, Context.Channel);
-
-                var reactionHandlers = Context.Database.GetCollection<IReactionHandler>();
-                reactionHandlers.Insert(new GameHandler() { MsgId = scoringMessage.Id, GameId = game.Id });
-                reactionHandlers.EnsureIndex(x => x.MsgId);
-            }
-            catch (Exception e)
-            {
-                await Context.Channel.SendMessageAsync($"Error: {e.Message}");
-            }
-        }
-
-        [Command("scbang")]
-        public async Task NewSCBangCommand(int numDeputies, int numOutlaws, int numRenegades, [Remainder]string message = "")
-        {
-            try
-            {
-                var game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser)s).ToList(), numDeputies, numOutlaws, numRenegades);
-                
-                var games = Context.Database.GetCollection<Game>();
-
-                // Delete current game if exists
-                try
-                {
-                    var existingGame = await Game.GetGameAsync(Context.Channel.Id, Context.Client, games);
-                    if (existingGame != null)
-                        games.Delete(g => g.Id == existingGame.Id);
-                }
-                catch (Exception) { }
-
-                // Insert into DB
-                games.Insert(game);
-                games.EnsureIndex(x => x.Id);
-
-
-                IUserMessage scoringMessage = await Output.StartGame(game, Context.Channel);
-
-                var reactionHandlers = Context.Database.GetCollection<IReactionHandler>();
-                reactionHandlers.Insert(new GameHandler() { MsgId = scoringMessage.Id, GameId = game.Id });
-                reactionHandlers.EnsureIndex(x => x.MsgId);
-            }
-            catch (Exception e)
-            {
-                await Context.Channel.SendMessageAsync($"Error: {e.Message}");
-            }
-        }
-
-        [Command("scbang")]
-        public async Task NewSCBangCommand(string helpText, [Remainder] string message = "")
-        {
-            if (helpText.ToLower() == "help")
-            {
-                await HelpCommand();
-                return;
-            }
-
-            await NewSCBangCommand();
-        }
-
         [Command("scbang"), Summary("**!scbang help** | Displays this help text.")]
         public async Task HelpCommand()
         {
+            Debug.WriteLine("Entered Help Command");
+
             await Output.HelpText(Context.Channel);
+        }
+
+        [Command("scbang"), Summary("**!scbang {@player1 @player2 ...}** Creates a new game of SCBang!")]
+        public async Task NewGameCommand([Remainder]string message = "")
+        {
+            Debug.WriteLine("Entering NewSCBangCommand");
+
+            if(message == "help")
+            {
+                await HelpCommand();
+            }
+            else
+            {
+                await TestGame();
+            }
         }
         #endregion
 
         #region Helpers
 
+        private async Task TestGame()
+        {
+            Console.WriteLine("Creating a new game");
+            Game game;
+            try
+            {
+                game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser)s).ToList());
+            }
+            catch (ArgumentException e)
+            {
+                await ReplyAsync($"{e.Message}");
+                return;
+            }
+
+            Console.WriteLine("Created Game!");
+
+            Debug.WriteLine("Starting game");
+            IUserMessage scoringMessage = await Output.StartGame(game, Context.Channel);
+        }
+
+        private async Task CreateGame()
+        {
+            Debug.WriteLine("Creating a new game");
+
+            Game game = Game.CreateGame(Context.Message.MentionedUsers.Select(s => (IUser)s).ToList());
+
+            Debug.WriteLine("Game Created");
+
+            var games = Context.Database.GetCollection<Game>();
+
+            // Delete current game if exists
+            try
+            {
+                Debug.WriteLine("Checking if game exists");
+
+                var existingGame = await Game.GetGameAsync(Context.Channel.Id, Context.Client, games);
+                if (existingGame != null)
+                {
+                    Debug.WriteLine("Deleting existing game");
+                    games.Delete(g => g.Id == existingGame.Id);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"Error: {e.Message}");
+                await Context.Channel.SendMessageAsync($"Error: {e.Message}");
+            }
+
+            // Insert into DB
+            games.Insert(game);
+            games.EnsureIndex(x => x.Id);
+
+            Debug.WriteLine("Starting game");
+            IUserMessage scoringMessage = await Output.StartGame(game, Context.Channel);
+
+            var reactionHandlers = Context.Database.GetCollection<IReactionHandler>();
+            reactionHandlers.Insert(new GameHandler() { MsgId = scoringMessage.Id, GameId = game.Id });
+            reactionHandlers.EnsureIndex(x => x.MsgId);
+        }
         #endregion
     }
 }
